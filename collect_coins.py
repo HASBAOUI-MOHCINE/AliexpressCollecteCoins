@@ -2,6 +2,7 @@ import time
 import random
 import os
 import sys
+import requests
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -10,6 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException
 
 
 # === FORCE UTF-8 OUTPUT ===
@@ -33,6 +35,64 @@ def configure_credentials():
 def random_sleep(min_seconds=1, max_seconds=3):
     """Sleep for a random amount of time to mimic human behavior"""
     time.sleep(random.uniform(min_seconds, max_seconds))
+
+def request_verification_code():
+    """Request a user-supplied verification code through Telegram."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set")
+
+    api_url = f"https://api.telegram.org/bot{token}"
+    requests.post(
+        f"{api_url}/sendMessage",
+        json={"chat_id": chat_id, "text": "AliExpress needs verification. Reply with the code."},
+        timeout=15,
+    ).raise_for_status()
+
+    offset = None
+    deadline = time.time() + 600
+    while time.time() < deadline:
+        response = requests.get(
+            f"{api_url}/getUpdates",
+            params={"timeout": 20, "offset": offset},
+            timeout=30,
+        )
+        response.raise_for_status()
+        for update in response.json().get("result", []):
+            offset = update["update_id"] + 1
+            message = update.get("message", {})
+            if str(message.get("chat", {}).get("id")) != str(chat_id):
+                continue
+            code = message.get("text", "").strip()
+            if code.isdigit():
+                return code
+
+    raise TimeoutError("Timed out waiting for the Telegram verification code")
+
+def enter_verification_code(driver, code):
+    """Fill a visible verification input without attempting to bypass it."""
+    verification_input = WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.XPATH,
+            "//input[contains(translate(@placeholder, 'CODEVERIFY', 'codeverify'), 'code') or "
+            "contains(translate(@aria-label, 'CODEVERIFY', 'codeverify'), 'code') or "
+            "contains(translate(@placeholder, 'OTP', 'otp'), 'otp')]"))
+    )
+    verification_input.clear()
+    verification_input.send_keys(code)
+    verification_input.send_keys(Keys.ENTER)
+
+def verification_is_required(driver):
+    try:
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH,
+                "//input[contains(translate(@placeholder, 'CODEVERIFY', 'codeverify'), 'code') or "
+                "contains(translate(@aria-label, 'CODEVERIFY', 'codeverify'), 'code') or "
+                "contains(translate(@placeholder, 'OTP', 'otp'), 'otp')]"))
+        )
+        return True
+    except TimeoutException:
+        return False
 
 def record_page_state(driver, name):
     """Record non-sensitive browser state to diagnose blocked or changed pages."""
@@ -169,10 +229,15 @@ def login(driver):
             
         print("Clicked sign in button")
         
-        # Wait for login to complete
-        # Give more time for the login process to complete
+        if os.getenv("TELEGRAM_BOT_TOKEN") and verification_is_required(driver):
+            enter_verification_code(driver, request_verification_code())
+
         random_sleep(5, 7)
-        print("Login successful")
+        WebDriverWait(driver, 30).until(
+            lambda current_driver: "login.html" not in current_driver.current_url
+            and not current_driver.find_elements(By.ID, "fm-login-password")
+        )
+        print("Login step completed")
         
         return True
     
@@ -537,7 +602,8 @@ def main():
     configure_credentials()
 
     chrome_options = Options()
-    chrome_options.add_argument("--headless=new")
+    if os.getenv("HEADLESS", "0") == "1":
+        chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")  # Helps avoid detection

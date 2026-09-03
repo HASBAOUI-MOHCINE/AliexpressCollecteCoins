@@ -64,6 +64,8 @@ GitHub Actions provides hosted Linux runners with Chrome. Public repositories ge
 
 The workflow is defined in `.github/workflows/collect-coins.yml`. GitHub may delay scheduled workflows, and AliExpress may challenge or block GitHub-hosted IP addresses. Never commit credentials.
 
+If AliExpress requests a verification code, add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` as GitHub Actions secrets. Create a Telegram bot with BotFather, send it one message first, and obtain your numeric chat ID. The workflow will notify the bot, wait up to 10 minutes for a numeric reply, and enter that code into the visible verification form. This does not bypass verification.
+
 Vercel is still available as an optional HTTP deployment, but it requires a paid or free-tier external browser provider such as Browserless; GitHub Actions does not require that extra service.
 
 

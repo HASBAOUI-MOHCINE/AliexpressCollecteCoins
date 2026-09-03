@@ -14,6 +14,10 @@ jobs:
     env:
       ALIEXPRESS_EMAIL: ${{ secrets.ALIEXPRESS_EMAIL }}
       ALIEXPRESS_PASSWORD: ${{ secrets.ALIEXPRESS_PASSWORD }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      HEADLESS: "1"
+      MANUAL_LOGIN: "0"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
