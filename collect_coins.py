@@ -87,7 +87,9 @@ def enter_verification_code(driver, code):
             "contains(translate(@aria-label, 'CODEVERIFY', 'codeverify'), 'code') or "
             "contains(translate(@placeholder, 'OTP', 'otp'), 'otp') or "
             "contains(translate(@name, 'CODEVERIFY', 'codeverify'), 'code') or "
-            "contains(translate(@name, 'OTP', 'otp'), 'otp')]"))
+            "contains(translate(@name, 'OTP', 'otp'), 'otp') or "
+            "(@maxlength >= 4 and @maxlength <= 8 and "
+            "(@inputmode = 'numeric' or @type = 'tel' or @type = 'number'))]"))
     )
     verification_input.clear()
     verification_input.send_keys(code)
@@ -101,7 +103,9 @@ def verification_is_required(driver):
                 "contains(translate(@aria-label, 'CODEVERIFY', 'codeverify'), 'code') or "
                 "contains(translate(@placeholder, 'OTP', 'otp'), 'otp') or "
                 "contains(translate(@name, 'CODEVERIFY', 'codeverify'), 'code') or "
-                "contains(translate(@name, 'OTP', 'otp'), 'otp')]"))
+                "contains(translate(@name, 'OTP', 'otp'), 'otp') or "
+                "(@maxlength >= 4 and @maxlength <= 8 and "
+                "(@inputmode = 'numeric' or @type = 'tel' or @type = 'number'))]"))
         )
         return True
     except TimeoutException:
