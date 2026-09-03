@@ -76,7 +76,9 @@ def enter_verification_code(driver, code):
         EC.presence_of_element_located((By.XPATH,
             "//input[contains(translate(@placeholder, 'CODEVERIFY', 'codeverify'), 'code') or "
             "contains(translate(@aria-label, 'CODEVERIFY', 'codeverify'), 'code') or "
-            "contains(translate(@placeholder, 'OTP', 'otp'), 'otp')]"))
+            "contains(translate(@placeholder, 'OTP', 'otp'), 'otp') or "
+            "contains(translate(@name, 'CODEVERIFY', 'codeverify'), 'code') or "
+            "contains(translate(@name, 'OTP', 'otp'), 'otp')]"))
     )
     verification_input.clear()
     verification_input.send_keys(code)
@@ -88,7 +90,9 @@ def verification_is_required(driver):
             EC.presence_of_element_located((By.XPATH,
                 "//input[contains(translate(@placeholder, 'CODEVERIFY', 'codeverify'), 'code') or "
                 "contains(translate(@aria-label, 'CODEVERIFY', 'codeverify'), 'code') or "
-                "contains(translate(@placeholder, 'OTP', 'otp'), 'otp')]"))
+                "contains(translate(@placeholder, 'OTP', 'otp'), 'otp') or "
+                "contains(translate(@name, 'CODEVERIFY', 'codeverify'), 'code') or "
+                "contains(translate(@name, 'OTP', 'otp'), 'otp')]"))
         )
         return True
     except TimeoutException:
@@ -229,8 +233,9 @@ def login(driver):
             
         print("Clicked sign in button")
         
-        if os.getenv("TELEGRAM_BOT_TOKEN") and verification_is_required(driver):
-            enter_verification_code(driver, request_verification_code())
+        if os.getenv("TELEGRAM_BOT_TOKEN"):
+            if verification_is_required(driver) or "login.html" in driver.current_url:
+                enter_verification_code(driver, request_verification_code())
 
         random_sleep(5, 7)
         WebDriverWait(driver, 30).until(
