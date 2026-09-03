@@ -83,7 +83,8 @@ def login(driver):
         # Wait for the email input field
         wait = WebDriverWait(driver, 15)
         email_input = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "input.cosmos-input[label='Email']"))
+            EC.presence_of_element_located((By.XPATH,
+                "//input[contains(@label, 'Email') or contains(@placeholder, 'Email') or contains(@aria-label, 'Email') or contains(@placeholder, 'phone')]"))
         )
         print("Found email input field")
         
