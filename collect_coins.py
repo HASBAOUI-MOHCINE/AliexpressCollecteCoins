@@ -36,6 +36,19 @@ def random_sleep(min_seconds=1, max_seconds=3):
     """Sleep for a random amount of time to mimic human behavior"""
     time.sleep(random.uniform(min_seconds, max_seconds))
 
+def telegram_send(message):
+    """Send a status message when Telegram notifications are configured."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        return
+    response = requests.post(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        json={"chat_id": chat_id, "text": message},
+        timeout=15,
+    )
+    response.raise_for_status()
+
 def request_verification_code():
     """Request a user-supplied verification code through Telegram."""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -44,11 +57,7 @@ def request_verification_code():
         raise RuntimeError("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set")
 
     api_url = f"https://api.telegram.org/bot{token}"
-    requests.post(
-        f"{api_url}/sendMessage",
-        json={"chat_id": chat_id, "text": "AliExpress needs verification. Reply with the code."},
-        timeout=15,
-    ).raise_for_status()
+    telegram_send("AliExpress needs verification. Reply with the code.")
 
     offset = None
     deadline = time.time() + 600
@@ -243,12 +252,14 @@ def login(driver):
             and not current_driver.find_elements(By.ID, "fm-login-password")
         )
         print("Login step completed")
+        telegram_send("AliExpress login completed successfully.")
         
         return True
     
     except Exception as e:
         print(f"Login failed: {e}")
         record_page_state(driver, "login-failure")
+        telegram_send(f"AliExpress login failed. Current page: {driver.current_url}")
         return False
 
 def change_country_to_korea(driver):
@@ -605,6 +616,7 @@ def find_and_click_collect_button(driver):
 def main():
     """Main function to run the coin collection process"""
     configure_credentials()
+    telegram_send("AliExpress coin collection started.")
 
     chrome_options = Options()
     if os.getenv("HEADLESS", "0") == "1":
@@ -667,6 +679,7 @@ def main():
                 # STEP 7: Look for the collect button
                 if find_and_click_collect_button(driver):
                     print("Successfully collected coins!")
+                    telegram_send("AliExpress coins collected successfully.")
                     break  # Exit the loop if successful
                 else:
                     print(f"Failed to find collect button on attempt {total_attempts}, restarting from Step 1")
@@ -688,6 +701,7 @@ def main():
         
     except Exception as e:
         print(f"An error occurred: {e}")
+        telegram_send(f"AliExpress collection failed: {type(e).__name__}")
         raise
     
     finally:
