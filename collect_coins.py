@@ -34,6 +34,13 @@ def random_sleep(min_seconds=1, max_seconds=3):
     """Sleep for a random amount of time to mimic human behavior"""
     time.sleep(random.uniform(min_seconds, max_seconds))
 
+def record_page_state(driver, name):
+    """Record non-sensitive browser state to diagnose blocked or changed pages."""
+    print(f"{name}: URL={driver.current_url}")
+    print(f"{name}: title={driver.title}")
+    print(f"{name}: body={driver.find_element(By.TAG_NAME, 'body').text[:1000]}")
+    driver.save_screenshot(f"{name}.png")
+
 def move_mouse_randomly(driver, element):
     """Move mouse with human-like randomness before clicking - safer version"""
     try:
@@ -170,6 +177,7 @@ def login(driver):
     
     except Exception as e:
         print(f"Login failed: {e}")
+        record_page_state(driver, "login-failure")
         return False
 
 def change_country_to_korea(driver):
@@ -388,6 +396,7 @@ def change_country_to_korea(driver):
     
     except Exception as e:
         print(f"Country change failed: {e}")
+        record_page_state(driver, "country-failure")
         return False
 
 def verify_korea_selected(driver):
@@ -559,7 +568,7 @@ def main():
         # Check if we need to login and proceed with login if necessary
         login_successful = login(driver)
         if not login_successful:
-            print("Login process failed, attempting to continue anyway...")
+            raise RuntimeError("Login failed; collection cannot continue")
         else:
             print("Successfully logged in")
 
@@ -601,12 +610,13 @@ def main():
                     find_and_click_collect_button(driver)
                 
         if total_attempts >= max_total_attempts:
-            print("Maximum attempts reached without successful coin collection.")
+            raise RuntimeError("Maximum attempts reached without successful coin collection")
             
         print("Coin collection process completed.")
         
     except Exception as e:
         print(f"An error occurred: {e}")
+        raise
     
     finally:
         # Don't close the browser immediately
