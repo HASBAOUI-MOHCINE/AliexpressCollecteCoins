@@ -185,8 +185,9 @@ def login(driver):
         
         # Find and click the Continue button
         continue_button = wait.until(
-            EC.element_to_be_clickable((By.XPATH, 
-                "//button[contains(@class, 'cosmos-btn-primary') and .//span[text()='Continue']]"))
+            EC.element_to_be_clickable((By.XPATH,
+                "//button[contains(@class, 'cosmos-btn-primary') and "
+                ".//*[normalize-space()='Continue' or normalize-space()='Next']]"))
         )
         print("Found continue button")
         
@@ -229,8 +230,9 @@ def login(driver):
         
         # Find and click the Sign in button
         sign_in_button = wait.until(
-            EC.element_to_be_clickable((By.XPATH, 
-                "//button[contains(@class, 'cosmos-btn-primary') and .//span[text()='Sign in']]"))
+            EC.element_to_be_clickable((By.XPATH,
+                "//button[contains(@class, 'cosmos-btn-primary') and "
+                ".//*[normalize-space()='Sign in' or normalize-space()='Log in']]"))
         )
         print("Found sign in button")
         
@@ -246,9 +248,8 @@ def login(driver):
             
         print("Clicked sign in button")
         
-        if os.getenv("TELEGRAM_BOT_TOKEN"):
-            if verification_is_required(driver) or "login.html" in driver.current_url:
-                enter_verification_code(driver, request_verification_code())
+        if os.getenv("TELEGRAM_BOT_TOKEN") and verification_is_required(driver):
+            enter_verification_code(driver, request_verification_code())
 
         random_sleep(5, 7)
         WebDriverWait(driver, 30).until(
